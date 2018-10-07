@@ -1,0 +1,12 @@
+#############
+# Directories
+#############
+/__pycache__/
+/MNIST_data/
+/old/
+
+#############
+# Test Files
+#############
+*skeleton*
+
