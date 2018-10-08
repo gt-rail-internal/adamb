@@ -14,8 +14,8 @@
 # Datadir stuff
 #############
 # exclude everything
-somefolder/*
+run_data/*
 
 # exception to the rule
-!somefolder/.gitkeep 
+!run_data/.keep 
 
