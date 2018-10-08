@@ -13,22 +13,23 @@ import math
 from tensorflow.contrib.slim.python.slim.data import dataset
 from tensorflow.contrib.slim.python.slim.data import dataset_data_provider
 from datasets import cifar10
+from datasets import download_and_convert_cifar10
 import adamb_data_loader
 
 slim = tf.contrib.slim
 
 # Limits to only one GPU:
-os.environ["CUDA_VISIBLE_DEVICES"]="0"
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
 
 tf.app.flags.DEFINE_boolean('debug', False, 'Produces debugging output.')
-
+tf.app.flags.DEFINE_string('dataset_dir', '/tmp/dataset', 'Directory where checkpoints are.')
 tf.app.flags.DEFINE_string('method', 'singleton', 'technique for constructing the minibatch.')
 tf.app.flags.DEFINE_string('dataset_name', 'cifar10', 'name of the dataset.')
 tf.app.flags.DEFINE_integer('batch_size', 32, 'The number of images in each eval branch.')
 tf.app.flags.DEFINE_float('learning_rate', 0.01, 'The step size of gradient descent.')
-tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/clean_adamb', 'Directory where checkpoints are.')
-tf.app.flags.DEFINE_string('log_dir', '/tmp/clean_adamb', 'Directory where logs are .')
+tf.app.flags.DEFINE_string('checkpoint_dir', '/ada_mb/run_data', 'Directory where checkpoints are.')
+tf.app.flags.DEFINE_string('log_dir', '/ada_mb/run_data', 'Directory where logs are .')
 tf.app.flags.DEFINE_string('model', 'resnet', 'model name.')
 tf.app.flags.DEFINE_string('master', '', 'The BNS address of the TensorFlow master, empty for nonborg.')
 tf.app.flags.DEFINE_integer('eval_interval_secs', 25, 'How often to check for/eval new checkpoint.')
@@ -57,8 +58,9 @@ num_classes = {'cifar10': 10,
 def main(_):
     g=tf.Graph()
     with g.as_default():
+        download_and_convert_cifar10.run('/tmp/dataset') # TODO this seems unnecessary, to download the files twice. 
         # dataset = datasets.get_dataset(FLAGS.dataset_name, 'test')
-        data_provider = dataset_data_provider.DatasetDataProvider(cifar10.get_split('test','.'),
+        data_provider = dataset_data_provider.DatasetDataProvider(cifar10.get_split('test',FLAGS.dataset_dir),
                 common_queue_capacity=2*FLAGS.batch_size, common_queue_min=FLAGS.batch_size)
         # data_provider = dataset_data_provider.DatasetDataProvider(
         #    dataset, common_queue_capacity=2*FLAGS.batch_size, common_queue_min=FLAGS.batch_size)
@@ -74,7 +76,7 @@ def main(_):
             with slim.arg_scope(resnet_v2.resnet_arg_scope()):
                 logits, end_points = resnet_v2.resnet_v2_50(images,
                                                             num_classes[FLAGS.dataset_name],
-                                                            is_training=True,
+                                                            is_training=False,
                                                             global_pool=True)
                 predictions = end_points['predictions']
                 predictions = tf.argmax(predictions, 1)

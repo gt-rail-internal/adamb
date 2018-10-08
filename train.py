@@ -4,6 +4,7 @@ from __future__ import print_function
 
 from os.path import join
 import sys
+import os
 
 import tensorflow as tf
 import numpy as np
@@ -38,9 +39,9 @@ tf.app.flags.DEFINE_string('model', 'resnet', 'model name.')
 tf.app.flags.DEFINE_float('recip_scale', 1.0, 'scaling value for the potential function. must be  > 0.')
 tf.app.flags.DEFINE_string('pot_func', 'sq_recip', 'type of potential function.')
 tf.app.flags.DEFINE_string('opt', 'sgdm', 'the optimization algorithm used')
-tf.app.flags.DEFINE_integer('max_steps', 2000, 'The maximum number of gradient steps.')
+tf.app.flags.DEFINE_integer('max_steps', 20000, 'The maximum number of gradient steps.')
 tf.app.flags.DEFINE_float('learning_rate', 0.03, 'The step size of gradient descent.')
-tf.app.flags.DEFINE_string('train_log_dir', '/tmp/data_adamb', 'Directory where to write stuff.')
+tf.app.flags.DEFINE_string('train_log_dir', '/ada_mb/run_data', 'Directory where to write stuff.')
 tf.app.flags.DEFINE_integer('save_summaries_secs', 25, 'The summary save period.')
 tf.app.flags.DEFINE_integer('save_summary_iters', 150, 'The summary save frequency.')
 tf.app.flags.DEFINE_integer('save_model_iters', 300, 'The model save frequency.')

@@ -20,3 +20,5 @@ RUN git clone https://github.com/tensorflow/models.git /tensorflow_models
 
 
 ENV PYTHONPATH $PYTHONPATH:/tensorflow_models:/tensorflow_models/research/slim
+
+#WORKDIR /ada_mb
