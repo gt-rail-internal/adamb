@@ -24,9 +24,9 @@ class adamb_data_loader():
         # Keras dataset import is tuple of two elements, [0] data (samples, imheight, imwidth, channels)
         # [1] labels (samples,1)
         if self.dataset_name == 'cifar10':
-            train_set, _ = tf.keras.datasets.cifar10.load_data()
+            train_set, test_set = tf.keras.datasets.cifar10.load_data()
         elif self.dataset_name == 'mnist':
-            train_set, _ = tf.keras.datasets.mnist.load_data()
+            train_set, test_set = tf.keras.datasets.mnist.load_data()
 
         # sorting by label to enforce diversity
         train_labels_sort = train_set[1].reshape(-1).argsort(kind='heapsort')  # doesn't need to be heapsort
@@ -38,21 +38,26 @@ class adamb_data_loader():
         self.singletons = np.linspace(start=bin_init, stop=bin_init*self.num_train_samples, num=self.num_train_samples)
         self.embeddings = np.random.normal(0.3, 0.6, size=self.num_train_samples)
 
-    def load_batch(self, batch_size=16, one_hot=True, method='singleton'):
-        if method == 'singleton':
-            bin_samples = self.singletons[-1]*np.random.random_sample(size=batch_size)
-            sample_idxs = np.searchsorted(self.singletons, bin_samples)
-
-        elif method == 'pairwise':
-            bin_samples = self.singletons[-1]*np.random.random_sample(size=int(batch_size/2))
-            sample_idxs = np.searchsorted(self.singletons, bin_samples)
-
+    def load_batch(self, batch_size=16, one_hot=True, method='singleton', split='train'):
+        if split=='test':
+            pass
         else:
-            # Select images randomly
-            sample_idxs = np.random.randint(self.num_train_samples, size=batch_size)
-        images, labels = self.get_data_from_idx(sample_idxs, one_hot)
-        images_raw = np.expand_dims(images, 0)
-        images_raw = np.squeeze(images_raw)
+            if method == 'singleton':
+                bin_samples = self.singletons[-1]*np.random.random_sample(size=batch_size)
+                sample_idxs = np.searchsorted(self.singletons, bin_samples)
+
+            elif method == 'pairwise':
+                bin_samples = self.singletons[-1]*np.random.random_sample(size=int(batch_size/2))
+                sample_idxs = np.searchsorted(self.singletons, bin_samples)
+
+            else:
+                # Select images randomly
+                sample_idxs = np.random.randint(self.num_train_samples, size=batch_size)
+            images, labels = self.get_data_from_idx(sample_idxs, one_hot)
+            images_raw = np.expand_dims(images, 0)
+            images_raw = np.squeeze(images_raw)
+
+        
 
         return images, images_raw, labels, sample_idxs
 

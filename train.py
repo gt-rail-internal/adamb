@@ -12,10 +12,17 @@ import nets.resnet_v2 as resnet_v2
 import nets.inception as inception
 # from tensorflow.contrib.slim.nets import inception
 import adamb_data_loader
-import eval
 
+
+# for intermittent eval
+from tensorflow.contrib.slim.python.slim.data import dataset_data_provider
+# from research.slim.datasets
+from datasets import cifar10
 
 slim = tf.contrib.slim
+
+# Limiting to only one GPU. TODO make this a flag somehow...
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 tf.app.flags.DEFINE_boolean('debug', False, 'Produces debugging output.')
@@ -86,8 +93,21 @@ def run_adaptive_training():
             p_emb_idx = tf.placeholder(tf.int32, shape=(FLAGS.batch_size/2, ))
             p_assign_idx = tf.placeholder(tf.int32)
 
+            # Data for eval. Currently hardcoded for cifar
+            eval_data_provider = dataset_data_provider.DatasetDataProvider(cifar10.get_split('test','.'),
+                    common_queue_capacity=2*FLAGS.batch_size, common_queue_min=FLAGS.batch_size)
+            e_image, e_label = eval_data_provider.get(['image', 'label'])
+            e_image = tf.to_float(e_image) # TODO this is a hack
+            eval_images, eval_labels = tf.train.batch([e_image,e_label], 
+                                            batch_size=FLAGS.batch_size, 
+                                            num_threads=1,
+                                            capacity=5*FLAGS.batch_size,
+                                            allow_smaller_final_batch=True)
+            
             with tf.device('/cpu:0'):
                 dataloader = adamb_data_loader.adamb_data_loader(FLAGS.dataset_name, decay=FLAGS.decay, loss_scaling=FLAGS.loss_scaling)
+
+
 
             if FLAGS.model == 'resnet':
                 with slim.arg_scope(resnet_v2.resnet_arg_scope()):
@@ -211,10 +231,10 @@ def run_adaptive_training():
                     labels = np.concatenate((labels, label_pairs), axis=0)
                     sample_idxs = np.append(sample_idxs, pair_idxs)
 
-                    # _, losses, batch_embeddings, _, summary = sess.run([train_op, sample_losses, embeddings, emb_update_op, merged_summary_op],
-                    #                                                     feed_dict={p_images: images, p_labels: labels, p_assign_idx: sample_idxs})
-                    _, losses, batch_embeddings, summary = sess.run([train_op, sample_losses, embeddings, merged_summary_op],
-                                                                        feed_dict={p_images: images, p_labels: labels, p_assign_idx: sample_idxs})
+                    _, losses, acc, batch_embeddings, _, summary = sess.run([train_op, sample_losses, accuracy_op, embeddings, emb_update_op, merged_summary_op],
+                                                                       feed_dict={p_images: images, p_labels: labels, p_assign_idx: sample_idxs})
+                    # _, losses, batch_embeddings, summary = sess.run([train_op, sample_losses, embeddings, merged_summary_op],
+                    #                                                    feed_dict={p_images: images, p_labels: labels, p_assign_idx: sample_idxs})
 
                 else:
                     _, losses, acc, summary = sess.run([train_op, sample_losses, accuracy_op, merged_summary_op],

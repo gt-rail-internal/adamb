@@ -9,12 +9,16 @@ import numpy as np
 # import tensorflow.contrib.slim.nets as nets
 import nets.resnet_v2 as resnet_v2
 import nets.inception as inception
-
+import math
 from tensorflow.contrib.slim.python.slim.data import dataset
 from tensorflow.contrib.slim.python.slim.data import dataset_data_provider
+from datasets import cifar10
 import adamb_data_loader
 
 slim = tf.contrib.slim
+
+# Limits to only one GPU:
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 
 tf.app.flags.DEFINE_boolean('debug', False, 'Produces debugging output.')
@@ -23,9 +27,11 @@ tf.app.flags.DEFINE_string('method', 'singleton', 'technique for constructing th
 tf.app.flags.DEFINE_string('dataset_name', 'cifar10', 'name of the dataset.')
 tf.app.flags.DEFINE_integer('batch_size', 32, 'The number of images in each eval branch.')
 tf.app.flags.DEFINE_float('learning_rate', 0.01, 'The step size of gradient descent.')
-tf.app.flags.DEFINE_string('train_log_dir', '/tmp/clean_adamb', 'Directory where to write stuff.')
+tf.app.flags.DEFINE_string('checkpoint_dir', '/tmp/clean_adamb', 'Directory where checkpoints are.')
+tf.app.flags.DEFINE_string('log_dir', '/tmp/clean_adamb', 'Directory where logs are .')
 tf.app.flags.DEFINE_string('model', 'resnet', 'model name.')
-tf.app.flags.DEFINE_float('recip_scale', 1.0, 'scaleing value for the potential function.')
+tf.app.flags.DEFINE_string('master', '', 'The BNS address of the TensorFlow master, empty for nonborg.')
+tf.app.flags.DEFINE_integer('eval_interval_secs', 25, 'How often to check for/eval new checkpoint.')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -51,9 +57,11 @@ num_classes = {'cifar10': 10,
 def main(_):
     g=tf.Graph()
     with g.as_default():
-        dataset = datasets.get_dataset(FLAGS.dataset_name, 'test')
-        data_provider = dataset_data_provider.DatasetDataProvider(
-            dataset, common_queue_capacity=2*FLAGS.batch_size, common_queue_min=FLAGS.batch_size)
+        # dataset = datasets.get_dataset(FLAGS.dataset_name, 'test')
+        data_provider = dataset_data_provider.DatasetDataProvider(cifar10.get_split('test','.'),
+                common_queue_capacity=2*FLAGS.batch_size, common_queue_min=FLAGS.batch_size)
+        # data_provider = dataset_data_provider.DatasetDataProvider(
+        #    dataset, common_queue_capacity=2*FLAGS.batch_size, common_queue_min=FLAGS.batch_size)
         image, label = data_provider.get(['image', 'label'])
         image = tf.to_float(image) # TODO this is a hack
         images, labels = tf.train.batch([image,label], 
@@ -80,31 +88,31 @@ def main(_):
                                                             global_pool=True)
                 predictions = tf.argmax(logits, 1)
 
-        one_hot_labels = slim.one_hot_encoding(labels, dataset.num_classes)
-        one_hot_labels = tf.squeeze(one_hot_labels, axis=1)
+        one_hot_labels = slim.one_hot_encoding(labels, num_classes[FLAGS.dataset_name])
+        # one_hot_labels = tf.squeeze(one_hot_labels, axis=1)
 
         # Defining metrics:
         names_to_values, name_to_updates = slim.metrics.aggregate_metric_map({
             'Accuracy': tf.metrics.accuracy(predictions=predictions, labels=labels),
             'Recall_5': tf.metrics.recall_at_k(predictions=end_points['predictions'],
-                labels=tf.to_int64(one_hot_labels)) 
-            })
+                labels=tf.to_int64(one_hot_labels), k=5) 
+            }) #TODO k is hardcoded
         
-        for name, value in names_to_values.iterations():
+        for name, value in names_to_values.items():
             slim.summaries.add_scalar_summary(
                 value, name, prefix='eval', print_summary=True)
 
-        num_batches = math.ceil(num_samples[FLAGS.dataset_name] / float(FLAGS.batch_size)) 
+        num_batches = math.ceil(num_train_samples[FLAGS.dataset_name] / float(FLAGS.batch_size)) 
 
         slim.evaluation.evaluation_loop(
-            master=FLAGS.master,
-            checkpoint_dir=FLAGS.checkpoint_dir,
-            logdir=FLAGS.eval_dir,
-            num_eval=num_batches,
-            eval_op=name_to_updates.values(),
-            final_op=names_to_values.values(),
-            eval_interval_secs=FLAGS.eval_interval_secs)
+                master=FLAGS.master,
+                checkpoint_dir=FLAGS.checkpoint_dir,
+                logdir=FLAGS.log_dir,
+                num_evals=num_batches,
+                eval_op=name_to_updates.values(),
+                final_op=names_to_values.values(),
+                eval_interval_secs=FLAGS.eval_interval_secs)
 
 
 if __name__ == '__main__':
-    app.run()
+    tf.app.run()
