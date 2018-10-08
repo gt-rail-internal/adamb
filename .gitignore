@@ -10,3 +10,12 @@
 #############
 *skeleton*
 
+#############
+# Datadir stuff
+#############
+# exclude everything
+somefolder/*
+
+# exception to the rule
+!somefolder/.gitkeep 
+
