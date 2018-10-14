@@ -8,7 +8,7 @@ import os
 
 import tensorflow as tf
 import numpy as np
-# if 'research' in sys.path:
+# if 'research' in sys.path: /home/balloch/software/models/research/slim
 import nets.resnet_v2 as resnet_v2
 import nets.inception as inception
 # from tensorflow.contrib.slim.nets import inception
