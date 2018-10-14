@@ -50,6 +50,10 @@ num_train_samples = {'cifar10': 50000,
                      'mnist': 50000,
                      'imagenet': 1000000}
 
+num_test_samples = {'cifar10': 10000,
+                     'mnist': 10000,
+                     'imagenet': 200000}
+
 num_classes = {'cifar10': 10,
                'mnist': 10,
                'imagenet': 1000}
@@ -76,7 +80,7 @@ def main(_):
             with slim.arg_scope(resnet_v2.resnet_arg_scope()):
                 logits, end_points = resnet_v2.resnet_v2_50(images,
                                                             num_classes[FLAGS.dataset_name],
-                                                            is_training=False,
+                                                            is_training=True,
                                                             global_pool=True)
                 predictions = end_points['predictions']
                 predictions = tf.argmax(predictions, 1)
@@ -86,10 +90,11 @@ def main(_):
                 print(num_classes)
                 logits, end_points = inception.inception_v1(images,
                                                             num_classes[FLAGS.dataset_name],
-                                                            is_training=True,
+                                                            is_training=False,
                                                             global_pool=True)
                 predictions = tf.argmax(logits, 1)
 
+        variables_to_restore = slim.get_variables_to_restore()
         one_hot_labels = slim.one_hot_encoding(labels, num_classes[FLAGS.dataset_name])
         # one_hot_labels = tf.squeeze(one_hot_labels, axis=1)
 
@@ -104,7 +109,7 @@ def main(_):
             slim.summaries.add_scalar_summary(
                 value, name, prefix='eval', print_summary=True)
 
-        num_batches = math.ceil(num_train_samples[FLAGS.dataset_name] / float(FLAGS.batch_size)) 
+        num_batches = math.ceil(num_test_samples[FLAGS.dataset_name] / float(FLAGS.batch_size)) 
 
         slim.evaluation.evaluation_loop(
                 master=FLAGS.master,
