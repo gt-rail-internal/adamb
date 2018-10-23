@@ -48,7 +48,7 @@ class adamb_data_loader():
 
             elif method == 'pairwise':
                 # # Seed from singletons
-                # bin_samples = self.singletons[-1]*np.random.random_sample(size=int(batch_size/2))
+                # bin_samples = self.singletons[-1]*np.random.random_sample(size=int(batch_size))
                 # sample_idxs = np.searchsorted(self.singletons, bin_samples)
                 # Seed from random
                 sample_idxs = np.random.randint(self.num_train_samples, size=batch_size)
