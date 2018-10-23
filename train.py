@@ -219,10 +219,11 @@ def run_adaptive_training():
             for step in range(FLAGS.max_steps):
                 # TODO Still need to modify this to do more than just half-batches
                 # TODO should be split up into functions that return images/labels from idx and a separate function that finds those idxs, not one in the same
-                images, _, labels, sample_idxs = dataloader.load_batch(batch_size=FLAGS.batch_size, method=FLAGS.method)
-                    # print('images', images.shape, 'labels', labels.shape, 'sample_idxs', sample_idxs.shape)
 
                 if FLAGS.method == 'pairwise':
+                    images, _, labels, sample_idxs = dataloader.load_batch(batch_size=int(FLAGS.batch_size/2),
+                                                                           method=FLAGS.method)
+                    # print('images', images.shape, 'labels', labels.shape, 'sample_idxs', sample_idxs.shape)
                     pair_idxs = sess.run(pair_idx_tensor, feed_dict={p_emb_idx: sample_idxs, p_labels: labels})
                     if FLAGS.debug:
                         np_diverse_dist = sess.run(diverse_dist, feed_dict={p_emb_idx: sample_idxs, p_labels: labels})
@@ -238,6 +239,9 @@ def run_adaptive_training():
                     #                                                    feed_dict={p_images: images, p_labels: labels, p_assign_idx: sample_idxs})
 
                 else:
+                    images, _, labels, sample_idxs = dataloader.load_batch(batch_size=FLAGS.batch_size,
+                                                                           method=FLAGS.method)
+                    # print('images', images.shape, 'labels', labels.shape, 'sample_idxs', sample_idxs.shape)
                     _, losses, acc, summary = sess.run([train_op, sample_losses, accuracy_op, merged_summary_op],
                                                     feed_dict={p_images: images, p_labels: labels})
 

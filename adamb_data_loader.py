@@ -47,8 +47,11 @@ class adamb_data_loader():
                 sample_idxs = np.searchsorted(self.singletons, bin_samples)
 
             elif method == 'pairwise':
-                bin_samples = self.singletons[-1]*np.random.random_sample(size=int(batch_size/2))
-                sample_idxs = np.searchsorted(self.singletons, bin_samples)
+                # # Seed from singletons
+                # bin_samples = self.singletons[-1]*np.random.random_sample(size=int(batch_size/2))
+                # sample_idxs = np.searchsorted(self.singletons, bin_samples)
+                # Seed from random
+                sample_idxs = np.random.randint(self.num_train_samples, size=batch_size)
 
             else:
                 # Select images randomly
