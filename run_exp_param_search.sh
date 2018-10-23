@@ -24,7 +24,7 @@ do
             docker run --runtime=nvidia -u $(id -u):$(id -g) -v $(pwd):/ada_mb --name eval -d tf_models python /ada_mb/eval.py --checkpoint_dir $SUBDIR_PATH --log_dir $SUBDIR_PATH
             sleep 15s
             docker run --runtime=nvidia -u $(id -u):$(id -g) -v $(pwd):/ada_mb -it tf_models python /ada_mb/train.py --method --learning_rate --train_log_dir $SUBDIR_PATH
-            
+            docker stop eval 
             #sleep $waittime
     done
 done
